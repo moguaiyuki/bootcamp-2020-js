@@ -17,7 +17,7 @@ class Dispatcher extends EventTarget {
 const FETCH_TODO_ACTION_TYPE = "Fetch todo list from server";
 export const createFetchTodoListAction = () => ({
   type: FETCH_TODO_ACTION_TYPE,
-  paylaod: undefined,
+  payload: undefined,
 });
 
 const ADD_TODO_ACTION_TYPE = "A todo addition to store";
@@ -25,6 +25,18 @@ export const createAddTodoAction = (todo) => ({
   type: ADD_TODO_ACTION_TYPE,
   payload: todo,
 });
+
+const REMOVE_TODO_ACTION_TYPE = "remove todo from server";
+export const removeTodoAction = (todoId) => ({
+  type: REMOVE_TODO_ACTION_TYPE,
+  payload: todoId,
+})
+
+const MARK_DONE_ACTION_TYPE = 'mark as done to store';
+export const markDoneAction = (todo) => ({
+  type: MARK_DONE_ACTION_TYPE,
+  payload: todo,
+})
 
 const CLEAR_ERROR = "Clear error from state";
 export const clearError = () => ({
@@ -64,6 +76,30 @@ const reducer = async (prevState, { type, payload }) => {
         return { todoList: [...prevState.todoList, resp], error: null };
       } catch (err) {
         return { ...prevState, error: err };
+      }
+    }
+    case REMOVE_TODO_ACTION_TYPE: {
+      try {
+        await fetch(api + '/' + payload, { method: "DELETE" });
+        const removeIndex = prevState.todoList.findIndex((todo) => todo.id == payload);
+        const nextState = { ...prevState };
+        nextState.todoList.splice(removeIndex, 1);
+        return { ...nextState, error: null };
+      } catch (err) {
+        return { ...prevState, error: err };
+      }
+    }
+    case MARK_DONE_ACTION_TYPE: {
+      const body = JSON.stringify(payload);
+      const config = { method: "PATCH", body, headers };
+      try {
+        const resp = await fetch(api + '/' + payload.id, config).then((d) => d.json());
+        const targetIndex = prevState.todoList.findIndex((todo) => todo.id == payload.id);
+        var nextState = { ...prevState };
+        nextState.todoList[targetIndex] = resp;
+        return { ...nextState, error: null }
+      } catch (err) {
+        return { ...prevState, error: err }
       }
     }
     case CLEAR_ERROR: {
